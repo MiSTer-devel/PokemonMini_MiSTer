@@ -17,7 +17,7 @@ def print_instructions(instructions, key_id=0, prefix='8\'h'):
 
 if __name__ == '__main__':
 
-    fp = open('docs/instructions.csv')
+    fp = open('instructions.csv')
     lines = fp.readlines()
     instructions = [x.split(',')[0].strip('"') for x in lines]
     cycles       = [x.strip().split(',')[-2:] for x in lines]

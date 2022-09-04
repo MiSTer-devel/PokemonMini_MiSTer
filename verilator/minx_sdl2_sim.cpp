@@ -753,14 +753,12 @@ int main(int argc, char** argv)
     //const char* rom_filepath = "data/pokemon_party_mini_u.min";
     //const char* rom_filepath = "data/pokemon_pinball_mini_u.min";
     //const char* rom_filepath = "data/pokemon_puzzle_collection_u.min";
-    //const char* rom_filepath = "data/pokemon_zany_cards_u.min";
+    const char* rom_filepath = "data/pokemon_zany_cards_u.min";
     //const char* rom_filepath = "data/pichu_bros_mini_j.min";
     //const char* rom_filepath = "data/pokemon_anime_card_daisakusen_j.min";
     //const char* rom_filepath = "data/snorlaxs_lunch_time_j.min";
     //const char* rom_filepath = "data/pokemon_shock_tetris_j.min";
-    //@todo:  It's showing random tiles between cutscene cards, when the card is
-    // coming from the top.
-    const char* rom_filepath = "data/togepi_no_daibouken_j.min";
+    //const char* rom_filepath = "data/togepi_no_daibouken_j.min";
     //const char* rom_filepath = "data/pokemon_race_mini_j.min";
     //const char* rom_filepath = "data/pokemon_sodateyasan_mini_j.min";
     //const char* rom_filepath = "data/pokemon_puzzle_collection_j.min";

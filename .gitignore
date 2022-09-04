@@ -4,6 +4,7 @@ verilator/obj_dir
 experiments/verilator/obj_dir
 *.vcd
 verilator/*.mem
+verilator/rom/
 *.min
 *.asm
 

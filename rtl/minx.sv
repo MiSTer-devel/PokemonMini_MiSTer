@@ -103,15 +103,15 @@ module minx
     assign irqs[5'h0C] = t256_irqs[1];
     assign irqs[5'h0D] = t256_irqs[2];
     assign irqs[5'h0E] = t256_irqs[3];
-    assign irqs[5'h10] = keys_active[8];
-    assign irqs[5'h15] = keys_active[7];
-    assign irqs[5'h16] = keys_active[6];
-    assign irqs[5'h17] = keys_active[5];
-    assign irqs[5'h18] = keys_active[4];
-    assign irqs[5'h19] = keys_active[3];
-    assign irqs[5'h1A] = keys_active[2];
-    assign irqs[5'h1B] = keys_active[1];
-    assign irqs[5'h1C] = keys_active[0];
+    assign irqs[5'h10] = key_irqs[8];
+    assign irqs[5'h15] = key_irqs[7];
+    assign irqs[5'h16] = key_irqs[6];
+    assign irqs[5'h17] = key_irqs[5];
+    assign irqs[5'h18] = key_irqs[4];
+    assign irqs[5'h19] = key_irqs[3];
+    assign irqs[5'h1A] = key_irqs[2];
+    assign irqs[5'h1B] = key_irqs[1];
+    assign irqs[5'h1C] = key_irqs[0];
 
     wire [23:0] irq_address_out;
     wire [7:0]  irq_data_out;
@@ -133,12 +133,16 @@ module minx
     );
 
     wire [7:0] key_data_out;
+    wire [8:0] key_irqs;
     key_input key_input
     (
+        .clk            (clk),
+        .clk_ce         (clk_ce),
         .reset          (reset),
-        .keys_active    (keys_active[7:0]),
+        .keys_active    (keys_active),
         .bus_address_in (cpu_address_out),
-        .bus_data_out   (key_data_out)
+        .bus_data_out   (key_data_out),
+        .key_irqs       (key_irqs)
     );
 
     wire [7:0] sc_data_out;

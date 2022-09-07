@@ -363,8 +363,9 @@ void simulate_steps(SimData* sim, int n_steps, AudioBuffer* audio_buffer = nullp
         {
             uint8_t volume = sim->minx->sound_volume;
             uint8_t sound_pulse = sim->minx->sound_pulse;
-            int8_t multiplier = (volume == 0)? 0: ((volume == 3)? 127: 63);
-            audio_buffer->data[i] = (2 * sound_pulse - 1) * multiplier;
+            uint8_t multiplier = (volume == 0)? 0: ((volume == 3)? 255: 127);
+            //audio_buffer->data[i] = (2 * sound_pulse - 1) * multiplier;
+            audio_buffer->data[i] = sound_pulse * multiplier;
             //if(audio_buffer->data[i] < 0) --audio_buffer->data[i];
         }
 
@@ -730,7 +731,7 @@ void audio_callback(void* userdata, uint8_t* stream, int len)
     memset(stream, 0, len);
     AudioBuffer* audio_buffer = (AudioBuffer*) userdata;
     for(int i = 0; i < len; ++i)
-        ((int8_t*)stream)[i] = audio_buffer->data[(91 * i + audio_buffer->read_position) % audio_buffer->size];
+        ((uint8_t*)stream)[i] = audio_buffer->data[(91 * i + audio_buffer->read_position) % audio_buffer->size];
     audio_buffer->read_position += 91 * len;
     audio_buffer->read_position = audio_buffer->read_position % audio_buffer->size;
 }
@@ -748,12 +749,13 @@ int main(int argc, char** argv)
     // sets the column to the cached value when Start RWM mode was issued,
     // which is initialized to 0 if Start was not issued. 6shades calls End
     // without Start.
+    //const char* rom_filepath = "data/badapple_2mb.min";
     //const char* rom_filepath = "data/6shades.min";
-    //const char* rom_filepath = "data/party_j.min";
+    const char* rom_filepath = "data/party_j.min";
     //const char* rom_filepath = "data/pokemon_party_mini_u.min";
     //const char* rom_filepath = "data/pokemon_pinball_mini_u.min";
     //const char* rom_filepath = "data/pokemon_puzzle_collection_u.min";
-    const char* rom_filepath = "data/pokemon_zany_cards_u.min";
+    //const char* rom_filepath = "data/pokemon_zany_cards_u.min";
     //const char* rom_filepath = "data/pichu_bros_mini_j.min";
     //const char* rom_filepath = "data/pokemon_anime_card_daisakusen_j.min";
     //const char* rom_filepath = "data/snorlaxs_lunch_time_j.min";
@@ -834,7 +836,7 @@ int main(int argc, char** argv)
     SDL_memset(&audio_spec_want, 0, sizeof(audio_spec_want));
 
     audio_spec_want.freq     = 44100;
-    audio_spec_want.format   = AUDIO_S8;
+    audio_spec_want.format   = AUDIO_U8;
     audio_spec_want.channels = 1;
     audio_spec_want.samples  = 512;
     audio_spec_want.callback = audio_callback;

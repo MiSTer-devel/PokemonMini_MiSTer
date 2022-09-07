@@ -17,7 +17,7 @@ module timer
     input [7:0] bus_data_in,
     output logic [7:0] bus_data_out,
     output logic [2:0] irqs,
-    output logic tout,
+    output tout,
     output osc256
 );
 
@@ -31,13 +31,19 @@ localparam TMR_CNT_L  = TMR_CNT;
 localparam TMR_CNT_H  = TMR_CNT+1;
 
 assign osc256 = (osc2_prescaler[6:0] == 7'h7F);
+assign tout = ~enabled_l ? 0: (
+    mode16 ?
+        ((timer < reg_compare)? 0: 1):
+        ((timer[7:0] < reg_compare[7:0])? 0: 1)
+);
+
+reg [7:0]  reg_scale;
+reg [1:0]  reg_osc_control;
+reg [15:0] timer;
 
 reg [15:0] reg_control;
 reg [15:0] reg_compare;
 reg [15:0] reg_preset;
-reg [7:0]  reg_scale;
-reg [1:0]  reg_osc_control;
-reg [15:0] timer;
 
 wire reset_l   = reg_control[1];
 wire enabled_l = reg_control[2];
@@ -214,7 +220,6 @@ begin
                     begin
                         if(timer == 0)
                         begin
-                            tout <= 1;
                             irqs[1] <= 1;
                             timer <= reg_preset;
                         end
@@ -223,7 +228,6 @@ begin
 
                         if(timer == reg_compare)
                         begin
-                            tout <= 0;
                             irqs[2] <= 1;
                         end
                     end
@@ -243,7 +247,6 @@ begin
                     begin
                         if(timer[7:0] == 0)
                         begin
-                            tout <= 1;
                             irqs[0] <= 1;
                             timer[7:0] <= reg_preset[7:0];
                         end
@@ -252,7 +255,6 @@ begin
 
                         if(timer[7:0] == reg_compare[7:0])
                         begin
-                            tout <= 0;
                             irqs[2] <= 1;
                         end
                     end

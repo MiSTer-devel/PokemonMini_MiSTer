@@ -218,6 +218,7 @@ localparam CONF_STR = {
     "O[98],Frame Blend,Off,On;",
     "O[122:121],Aspect ratio,Original,Full Screen,[ARC1],[ARC2];",
     "O[3:2],Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%;",
+    "O[33],Audio Mode,1,2;",
     "O[30],240p Mode,On,Off;",
     "d1O[29:28],240p Mode Scaling,3x,2x,1x;",
     "-;",
@@ -729,17 +730,7 @@ minx minx
     .eeprom_read_data      (bk_q)
 );
 
-reg [15:0] sound_out;
-always_comb
-begin
-    case({sound_volume, sound_pulse})
-        3'b000, 3'b001: sound_out = 16'h7FFF;
-        3'b010, 3'b100: sound_out = 16'h4000;
-        3'b011, 3'b101: sound_out = 16'hBFFE;
-        3'b110:         sound_out = 16'h0000;
-        3'b111:         sound_out = 16'hFFFF;
-    endcase
-end
+wire [15:0] sound_out = sound_pulse? {2'h0, sound_volume, 12'h0}: 16'h0;
 assign AUDIO_L = sound_out;
 assign AUDIO_R = sound_out;
 

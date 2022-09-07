@@ -159,6 +159,7 @@ module minx
     );
 
     wire [7:0] sound_data_out;
+
     sound sound
     (
         .clk            (clk),

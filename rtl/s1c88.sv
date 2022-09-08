@@ -14,6 +14,7 @@ module s1c88
     input reset,
     input [7:0] data_in,
     input [3:0] irq,
+    input [3:0] F,
     output logic pk,
     output logic pl,
     output wire [1:0] i01,
@@ -107,9 +108,8 @@ module s1c88
 
     // @todo:
     //
-    // * Bus wait states.
     // * Implement EXCEPTION_TYPE_DIVZERO.
-    // * Implement alu unpack operations
+    // * Bus wait states (not really required for mister).
 
     // For jump instruction we need: condition, offset (TA1/TA2). I think
     // we'll leave the mov instructions in there as common to all
@@ -375,8 +375,7 @@ module s1c88
         MICRO_COND_F2_SET        = 5'h11,
         MICRO_COND_F2_RST        = 5'h12,
         MICRO_COND_F3_SET        = 5'h13,
-        MICRO_COND_F3_RST        = 5'h14,
-        MICRO_COND_B_IS_ZERO     = 5'h15;
+        MICRO_COND_F3_RST        = 5'h14;
 
     localparam
         MICRO_JMP_SHORT = 1'b0,
@@ -919,18 +918,15 @@ module s1c88
             begin
                 jump_condition_true = 1;
             end
-            //MICRO_COND_LESS, MICRO_COND_GREATER:
-            //begin
-            //end
-            MICRO_COND_LESS_EQUAL:
+
+            MICRO_COND_LESS, MICRO_COND_GREATER_EQUAL:
             begin
-                if(flag_zero | (flag_negative ^ flag_overflow) == 1)
+                if(flag_negative ^ flag_overflow == micro_jmp_condition[0])
                     jump_condition_true = 1;
             end
-            MICRO_COND_GREATER_EQUAL:
+            MICRO_COND_GREATER, MICRO_COND_LESS_EQUAL:
             begin
-                //if(flag_zero | ~(flag_negative ^ flag_overflow) == 1)
-                if(flag_negative ^ flag_overflow == 0)
+                if((flag_zero | (flag_negative ^ flag_overflow)) == micro_jmp_condition[0])
                     jump_condition_true = 1;
             end
             MICRO_COND_OVERFLOW, MICRO_COND_NON_OVERFLOW:
@@ -953,21 +949,26 @@ module s1c88
                 if(flag_zero == micro_jmp_condition[0])
                     jump_condition_true = 1;
             end
-            //MICRO_COND_F0_SET, MICRO_COND_F0_RST:
-            //begin
-            //end
-            //MICRO_COND_F1_SET, MICRO_COND_F1_RST:
-            //begin
-            //end
-            //MICRO_COND_F2_SET, MICRO_COND_F2_RST:
-            //begin
-            //end
-            //MICRO_COND_F3_SET, MICRO_COND_F3_RST:
-            //begin
-            //end
-            //MICRO_COND_B_IS_ZERO:
-            //begin
-            //end
+            MICRO_COND_F0_SET, MICRO_COND_F0_RST:
+            begin
+                if(F[0] == micro_jmp_condition[0])
+                    jump_condition_true = 1;
+            end
+            MICRO_COND_F1_SET, MICRO_COND_F1_RST:
+            begin
+                if(F[1] == micro_jmp_condition[0])
+                    jump_condition_true = 1;
+            end
+            MICRO_COND_F2_SET, MICRO_COND_F2_RST:
+            begin
+                if(F[2] == micro_jmp_condition[0])
+                    jump_condition_true = 1;
+            end
+            MICRO_COND_F3_SET, MICRO_COND_F3_RST:
+            begin
+                if(F[3] == micro_jmp_condition[0])
+                    jump_condition_true = 1;
+            end
             default:
             begin
                 if(micro_op_type == MICRO_TYPE_JMP)

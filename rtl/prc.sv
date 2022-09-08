@@ -20,11 +20,6 @@ module prc
     output logic frame_complete
 );
 
-// @todo: Thinking about taking FR (32.768kHz clock divided by 7?) as input.
-// 'reg_counter' will then be driven by this clock, while the rest will run on the
-// system clock. Some work is required to actually run simulations with
-// multiple clocks.
-
 // @todo: What about page 8?
 
 // @note: For the sprite rendering basically implemented the following as
@@ -118,7 +113,7 @@ wire [1:0] next_state =
     ((state <= PRC_STATE_SPR_DRAW && reg_mode[3])? PRC_STATE_FRAME_COPY:
                                                    PRC_STATE_IDLE));
 
-reg [9:0] prc_osc_counter;
+reg [21:0] prc_osc_counter;
 reg bus_cycle;
 reg [8:0] execution_step;
 reg bus_write_latch;
@@ -261,16 +256,17 @@ always_ff @ (negedge clk)
 begin
     if(reset)
     begin
-        prc_osc_counter <= 10'd0;
+        prc_osc_counter <= 22'd0;
         reg_counter     <= 7'd1;
     end
     else if(clk_ce)
     begin
-        prc_osc_counter <= prc_osc_counter + 1;
+        // 75Hz*65 lines
+        prc_osc_counter <= prc_osc_counter + 22'd4875;
 
-        if(prc_osc_counter == 10'd854)
+        if(prc_osc_counter >= 22'd4000000)
         begin
-            prc_osc_counter <= 10'd0;
+            prc_osc_counter <= prc_osc_counter - 22'd4000000;
             reg_counter <= reg_counter + 1;
             if(reg_counter == 7'h41)
             begin
@@ -392,7 +388,7 @@ begin
                     else if(reg_counter == 7'h41)
                     begin
                         //$display("%d", cycle_count);
-                        cycle_count <= 0;
+                        cycle_count     <= 0;
                         bus_request     <= 0;
                         reg_rate[7:4]   <= 4'd0;
                         irq_render_done <= 1;
@@ -526,6 +522,8 @@ begin
                                     begin
                                         bus_status <= BUS_COMMAND_IDLE;
                                         xC <= 0;
+                                        // @todo: If any sprite_abs_x/y are
+                                        // zero, we can skip completely.
                                         if(sprite_tile_index < 3)
                                             sprite_tile_index <= sprite_tile_index + 1;
                                         else

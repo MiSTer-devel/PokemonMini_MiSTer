@@ -1,5 +1,3 @@
-// @todo: Implement interrupts
-
 module timer
 #(
     parameter TMR_SCALE, TMR_OSC, TMR_CTRL, TMR_PRE, TMR_PVT, TMR_CNT
@@ -202,7 +200,7 @@ begin
     if(clk_ce)
     begin
         osc1_prescaler <= osc1_prescaler + 1;
-        rt_clk_latch   <= clk_rt_ce & clk_rt; // @todo: What is correct?
+        rt_clk_latch   <= clk_rt_ce & clk_rt;
 
         if(reset_l)
             timer <= reg_preset;

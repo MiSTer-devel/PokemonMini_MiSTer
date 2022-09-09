@@ -749,7 +749,8 @@ int main(int argc, char** argv)
     // sets the column to the cached value when Start RWM mode was issued,
     // which is initialized to 0 if Start was not issued. 6shades calls End
     // without Start.
-    const char* rom_filepath = "data/lightsout.min";
+    const char* rom_filepath = "data/SHizZLE.min";
+    //const char* rom_filepath = "data/lightsout.min";
     //const char* rom_filepath = "data/galactix.min";
     //const char* rom_filepath = "data/badapple_2mb.min";
     //const char* rom_filepath = "data/6shades.min";

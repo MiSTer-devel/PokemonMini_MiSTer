@@ -27,6 +27,9 @@ begin
         end
         else
         begin
+            if(rt_reset)
+                reg_reset <= 0;
+
             if(write_latch)
             begin
                 if(bus_address_in == 24'h2008)
@@ -64,15 +67,18 @@ begin
     endcase
 end
 
+reg rt_reset = 0;
 always_ff @ (posedge clk_rt)
 begin
     if(reset | reg_reset)
     begin
         timer    <= 0;
         prescale <= 0;
+        rt_reset <= 1;
     end
     else if(clk_rt_ce)
     begin
+        rt_reset <= 0;
         prescale <= prescale + 15'd1;
         if(prescale == 15'h7FFF)
             timer <= timer + 24'd1;

@@ -381,6 +381,9 @@ module s1c88
         MICRO_JMP_SHORT = 1'b0,
         MICRO_JMP_LONG  = 1'b1;
 
+    // @todo: When we convert code from using both pos/neg edges to just using
+    // posedge with separate positive and negative ce, we might be able to
+    // revisit the romstyle to use synchronous bram, e.g. romstyle=no_rw_check.
     reg [10:0] translation_rom[0:767];
     reg [35:0] rom[0:2047];
 
@@ -464,6 +467,7 @@ module s1c88
     //  36        34          33      32   27   20        19    14  12   6
     // type alu_flag_write alu_size alu_op 0 jmp_size jmp_cond done mov mov
 
+    // @todo: Checked and at least the rom can alrady be made synchronous.
     wire [35:0] micro_op = rom[microaddress + {7'd0, microprogram_counter}];
 
     wire [1:0] micro_op_type = micro_op[35:34];

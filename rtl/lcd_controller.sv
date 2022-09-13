@@ -71,6 +71,7 @@ begin
             page                     <= 4'd0;
             read_latch               <= 0;
             write_latch              <= 0;
+            contrast                 <= 0;
         end
         else
         begin

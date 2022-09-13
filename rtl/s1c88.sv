@@ -643,13 +643,11 @@ module s1c88
             (exception != EXCEPTION_TYPE_NONE ? STATE_EXC_PROCESS:
                                                 STATE_EXECUTE):
 
-        (state == STATE_EXC_PROCESS) ?
-            (need_opext                       ? STATE_OPEXT_READ: // @todo: Remove this line.
-                                                STATE_EXECUTE):
+        (state == STATE_EXC_PROCESS) ?          STATE_EXECUTE:
 
         (state == STATE_EXECUTE) ?
-            (iack                             ? STATE_EXC_PROCESS:
-            (need_opext                       ? STATE_OPEXT_READ:
+            (iack ?                             STATE_EXC_PROCESS:
+            (need_opext ?                       STATE_OPEXT_READ:
                                                 STATE_EXECUTE)):
         (state == STATE_OPEXT_READ) ?
             (opext == 8'hAE ?                   STATE_HALT:

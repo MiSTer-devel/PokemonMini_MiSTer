@@ -224,9 +224,12 @@ localparam CONF_STR = {
     "-;",
     "T[0],Reset;",
     "R[0],Reset and close OSD;",
-    "J1,A,B,C,Shock Sensor,Power;",
-    "jn,A,B,R,L,select;",
-    "jp,A,B,R,L,select;",
+    "J1,A,B,C,Shock Sensor,Power,Toggle Frame Blend;",
+    "jn,A,B,R,L,select,Y;",
+    "jp,A,B,R,L,select,Y;",
+    "I,",
+    "Frame Blend On,",
+    "Frame Blend Off;",
     "V,v",`BUILD_DATE
 };
 
@@ -260,6 +263,9 @@ wire        sd_buff_wr;
 wire        img_mounted;
 wire        img_readonly;
 wire [63:0] img_size;
+
+wire        info_req;
+wire [7:0]  info;
 
 hps_io
 #(
@@ -300,6 +306,8 @@ hps_io
     .buttons(buttons),
     .status(status),
     .status_menumask({zoom_enable, cart_ready}),
+    .info_req(info_req),
+    .info(info),
 
     .ps2_key(ps2_key),
     .joystick_0(joystick_0),
@@ -469,6 +477,46 @@ wire [7:0] green = pixel_value_green;
 wire [7:0] blue  = pixel_value_blue;
 
 wire blend_mode = status[98];
+wire blend_toggle_button = joystick_0[9];
+wire blend_toggle_latch;
+wire blend_toggle;
+
+always @ (posedge clk_sys)
+begin
+    if(!blend_mode)
+    begin
+        if(reset)
+        begin
+            blend_toggle <= 1'b0;
+            blend_toggle_latch <= 1'b0;
+        end
+        else
+        begin
+            info_req <= 1'b0;
+
+            if(minx_clk_prescale)
+            begin
+                if(!blend_toggle_button)
+                    blend_toggle_latch <= 1'b0;
+                else
+                begin
+                    if(!blend_toggle_latch)
+                    begin
+                        blend_toggle_latch <= 1'b1;
+                        blend_toggle <= ~blend_toggle;
+                        info_req <= 1'b1;
+                        info <= {7'd0,blend_toggle} + 8'd1;
+                    end
+                end
+            end
+        end
+    end
+    else
+    begin
+        blend_toggle <= 1'b0;
+        blend_toggle_latch <= 1'b0;
+    end
+end
 
 localparam bit[7:0] OFF_COLOR[0:2] = '{8'hB7, 8'hCA, 8'hB7};
 localparam bit[7:0] ON_COLOR[0:2]  = '{8'h04, 8'h16, 8'h04};
@@ -555,7 +603,7 @@ wire [9:0] pixel_4frame_blend =
     {2'b0, get_pixel_intensity(fb_read[fb_read_index-3][img_ypos[2:0]], lcd_contrast_latch[fb_read_index-3])};
 
 wire [7:0] pixel_intensity =
-    (blend_mode == 0)?
+    ((blend_mode || blend_toggle) == 0)?
         get_pixel_intensity(fb_read[fb_read_index][img_ypos[2:0]], lcd_contrast_latch[fb_read_index]):
         pixel_4frame_blend[9:2];
 

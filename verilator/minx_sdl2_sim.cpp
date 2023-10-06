@@ -750,7 +750,7 @@ int main(int argc, char** argv)
     // which is initialized to 0 if Start was not issued. 6shades calls End
     // without Start.
     //const char* rom_filepath = "data/3Dcubetest.min";
-    const char* rom_filepath = "data/SHizZLE.min";
+    //const char* rom_filepath = "data/SHizZLE.min";
     //const char* rom_filepath = "data/lightsout.min";
     //const char* rom_filepath = "data/galactix.min";
     //const char* rom_filepath = "data/badapple_2mb.min";
@@ -760,7 +760,7 @@ int main(int argc, char** argv)
     //const char* rom_filepath = "data/pokemon_pinball_mini_u.min";
     //const char* rom_filepath = "data/pokemon_puzzle_collection_u.min";
     //const char* rom_filepath = "data/pokemon_zany_cards_u.min";
-    //const char* rom_filepath = "data/pichu_bros_mini_j.min";
+    const char* rom_filepath = "data/pichu_bros_mini_j.min";
     //const char* rom_filepath = "data/pokemon_anime_card_daisakusen_j.min";
     //const char* rom_filepath = "data/snorlaxs_lunch_time_j.min";
     //const char* rom_filepath = "data/pokemon_shock_tetris_j.min";

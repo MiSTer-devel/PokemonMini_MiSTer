@@ -141,6 +141,8 @@ begin
                                 8'b1110_0000:
                                     // Start "Read Modify Write"
                                     read_modify_mode <= 1;
+                                    // @todo: Store the column and restore
+                                    // when 'End'.
                                     //MinxLCD.RMWColumn = MinxLCD.Column;
 
                                 8'b1110_0010:

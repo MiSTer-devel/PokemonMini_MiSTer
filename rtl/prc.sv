@@ -115,7 +115,7 @@ wire [1:0] next_state =
 
 reg [21:0] prc_osc_counter;
 reg bus_cycle;
-reg [8:0] execution_step;
+reg [4:0] map_draw_step;
 reg bus_write_latch;
 reg [1:0] sprite_tile_index;
 
@@ -169,12 +169,15 @@ reg [2:0] frame_copy_state;
 reg [2:0] sprite_draw_state;
 reg [2:0] sprite_draw_state_current;
 reg [1:0] sprite_draw_tile_index;
-// @todo: Reuse execution_step? Rename to something else e.g.
+// @todo: Reuse map_draw_step Rename to something else e.g.
 // prc_stage_state.
 task init_next_state(input [1:0] prc_state);
     case(prc_state)
         PRC_STATE_MAP_DRAW:
-            execution_step <= 0;
+        begin
+            map_draw_step <= 0;
+            column_buffer <= 0;
+        end
 
         PRC_STATE_FRAME_COPY:
             frame_copy_state <= FRAME_COPY_STATE_COLUMN_SET1;
@@ -224,7 +227,7 @@ begin
 end
 wire [7:0] sprite_row_x = {1'b0, sprite_abs_x} + {1'b0, xC};
 
-reg [2:0] yC;
+reg [3:0] yC;
 reg [6:0] xC;
 reg top_or_bottom;
 reg [7:0] column_data;
@@ -235,9 +238,6 @@ reg [6:0] sprite_x;
 reg [6:0] sprite_y;
 reg [7:0] sprite_tile_address;
 reg [3:0] sprite_info;
-
-reg [7:0] tile_address;
-reg [7:0] tile_data;
 
 wire sprite_enabled = sprite_info[3];
 wire [7:0] sprite_tile_offset = {5'd0, sprite_tile_index[1], 2'd0} + {7'd0, sprite_tile_index[0]};
@@ -250,7 +250,7 @@ wire [7:0] sprite_color_masked_and_shifted = (top_or_bottom == 0)?
     (sprite_color & ~sprite_mask) >> (4'd8 - {1'b0, sprite_abs_y[2:0]});
 
 wire [7:0] map_x = {1'd0, xC} + {1'd0, map_scroll_x};
-wire [7:0] map_y = {1'd0, yC, 3'd0} + {1'd0, map_scroll_y};
+wire [7:0] map_y = {yC, 3'd0} + {1'd0, map_scroll_y};
 
 always_ff @ (negedge clk)
 begin
@@ -261,8 +261,8 @@ begin
     end
     else if(clk_ce)
     begin
-        // 75Hz*65 lines
-        prc_osc_counter <= prc_osc_counter + 22'd4875;
+        // 72.03Hz*65 lines
+        prc_osc_counter <= prc_osc_counter + 22'd4682;
 
         if(prc_osc_counter >= 22'd4000000)
         begin
@@ -278,7 +278,14 @@ end
 
 reg [6:0] reg_counter_old;
 reg [31:0] cycle_count;
-wire [7:0] column_write_data = (tile_data >> map_y[2:0]) | (bus_data_in << (8 - map_y[2:0]));
+
+reg [15:0] column_buffer;
+wire [15:0] column_buffer_new = {bus_data_in, column_buffer[15:8]};
+wire [15:0] column_buffer_scrolled = column_buffer_new >> map_y[2:0];
+wire [7:0] column = reg_mode[0]?
+    ~column_buffer_scrolled[7:0]:
+     column_buffer_scrolled[7:0];
+
 always_ff @ (negedge clk)
 begin
 
@@ -364,17 +371,17 @@ begin
             reg_counter_old <= reg_counter;
             if(reg_counter != reg_counter_old)
             begin
-                if(reg_counter == 7'h41)
+                if(reg_counter == 7'h03)
                     frame_complete <= 1;
 
                 if(reg_rate[7:4] == rate_match)
                 begin
                     // Active frame
-                    if(reg_counter < 7'h18)
+                    if(reg_counter > 7'h03 && reg_counter < 7'h18)
                     begin
                         state <= PRC_STATE_IDLE;
                     end
-                    else if(reg_counter < 7'h41)
+                    else if(reg_counter != 7'h03)
                     begin
                         // Draw map/sprite or copy frame
                         if(reg_mode[3:1] > 0 && !bus_ack)
@@ -385,7 +392,7 @@ begin
                             init_next_state(next_state);
                         end
                     end
-                    else if(reg_counter == 7'h41)
+                    else
                     begin
                         //$display("%d", cycle_count);
                         cycle_count     <= 0;
@@ -394,7 +401,7 @@ begin
                         irq_render_done <= 1;
                     end
                 end
-                else if(reg_counter == 7'h41)
+                else if(reg_counter == 7'h03)
                 begin
                     // Non-active frame
                     reg_rate[7:4] <= reg_rate[7:4] + 4'd1;
@@ -410,55 +417,47 @@ begin
                     begin
                         if(!bus_cycle)
                         begin
-                            execution_step <= execution_step + 1;
+                            map_draw_step <= (map_draw_step < 25)? map_draw_step + 1: 0;
 
-                            if(execution_step % 5 < 4)
+                            if((map_draw_step == 0) || (map_draw_step % 3 == 2))
+                            begin
+                                // Read tile address
                                 bus_status <= BUS_COMMAND_MEM_READ;
-                            else
-                                bus_status <= BUS_COMMAND_MEM_WRITE;
-
-                            if(execution_step % 5 == 0)
-                            begin
-                                // Read tile address (top)
                                 bus_address_out <= 24'h1360 + map_y[7:3] * map_width + {19'd0, map_x[7:3]};
+                                if(map_draw_step == 2)
+                                    column_buffer <= column_buffer_new;
                             end
-                            else if(execution_step % 5 == 1)
+                            else if((map_draw_step == 1) || (map_draw_step % 3 == 0))
                             begin
-                                // Read tile address (bottom)
-                                bus_address_out <= bus_address_out + {19'd0, map_width};
-                                tile_address    <= bus_data_in;
-                            end
-                            else if(execution_step % 5 == 2)
-                            begin
-                                // Read tile data (top)
-                                bus_address_out <= reg_map_base + {13'd0, tile_address, map_x[2:0]};
-                                tile_address    <= bus_data_in;
-                            end
-                            else if(execution_step % 5 == 3)
-                            begin
-                                // Read tile data (bottom)
-                                bus_address_out <= reg_map_base + {13'd0, tile_address, map_x[2:0]};
-                                tile_data       <= bus_data_in;
+                                // Read tile data
+                                bus_status <= BUS_COMMAND_MEM_READ;
+                                bus_address_out <= reg_map_base + {13'd0, bus_data_in, map_x[2:0]};
+                                if(map_draw_step == 1)
+                                    yC <= yC + 1;
                             end
                             else
                             begin
-                                data_out <= reg_mode[0]? ~column_write_data: column_write_data;
-                                bus_address_out <= 24'h1000 + yC * 96 + {16'h0, xC};
+                                // Read tile data
+                                bus_status <= BUS_COMMAND_MEM_WRITE;
+                                column_buffer <= column_buffer_new;
+                                yC <= yC + 1;
 
-                                xC <= xC + 1;
-                                if(xC == 7'd95)
+                                data_out <= column;
+                                bus_address_out <= 24'h1000 + yC * 96 + {16'h0, xC} - 96;
+
+                                if(yC == 4'd8)
                                 begin
-                                    xC <= 0;
+                                    yC <= 0;
 
-                                    if(yC == 3'd7)
+                                    if(xC == 7'd95)
                                     begin
-                                        yC <= 0;
+                                        xC <= 0;
                                         state <= next_state;
                                         init_next_state(next_state);
-                                        execution_step <= 0;
+                                        map_draw_step <= 0;
                                     end
                                     else
-                                        yC <= yC + 1;
+                                        xC <= xC + 1;
                                 end
                             end
                         end
@@ -668,7 +667,6 @@ begin
 
                     PRC_STATE_FRAME_COPY:
                     begin
-                        //execution_step <= execution_step + 1;
                         if(!bus_cycle)
                         begin
                             case(frame_copy_state)
@@ -689,7 +687,7 @@ begin
                                 FRAME_COPY_STATE_PAGE_SET:
                                 begin
                                     frame_copy_state <= FRAME_COPY_STATE_MEM_READ;
-                                    data_out        <= {4'hB, 1'h0, yC};
+                                    data_out        <= {4'hB, yC};
                                     bus_address_out <= 24'h20FE;
                                     bus_status      <= BUS_COMMAND_MEM_WRITE;
                                 end
@@ -713,7 +711,7 @@ begin
                                         xC <= 0;
                                         frame_copy_state <= FRAME_COPY_STATE_COLUMN_SET1;
 
-                                        if(yC == 3'd7)
+                                        if(yC == 4'd7)
                                         begin
                                             irq_copy_complete <= 1;
                                             yC <= 0;

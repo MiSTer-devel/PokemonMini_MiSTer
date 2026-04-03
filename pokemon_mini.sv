@@ -206,6 +206,7 @@ assign BUTTONS = 0;
 //////////////////////////////////////////////////////////////////
 
 wire [1:0] scale = status[3:2];
+wire [2:0] lcd_palette = status[36:34];
 wire [1:0] ar = status[122:121];
 
 assign VIDEO_ARX = (!ar) ? 12'd4 : (ar - 1'd1);
@@ -222,6 +223,7 @@ localparam CONF_STR = {
     "d0O[11],Autosave,Off,On;",
     "-;",
     "O[98],Frame Blend,Off,On;",
+    "O[36:34],Palette,Original,Gray,Blue,Teal,Amber,Red,Sepia;",
     "O[122:121],Aspect ratio,Original,Full Screen,[ARC1],[ARC2];",
     "O[3:2],Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%;",
     "O[33],Audio Mode,1,2;",
@@ -476,8 +478,31 @@ wire [7:0] blue  = pixel_value_blue;
 
 wire blend_mode = status[98];
 
-localparam bit[7:0] OFF_COLOR[0:2] = '{8'hB7, 8'hCA, 8'hB7};
-localparam bit[7:0] ON_COLOR[0:2]  = '{8'h04, 8'h16, 8'h04};
+localparam bit[7:0] palette_off_red_map[0:7] = '{
+    8'hB7, 8'hE0, 8'hD8, 8'hD0, 8'hF7, 8'hFF, 8'hE8, 8'hB7
+};
+localparam bit[7:0] palette_off_green_map[0:7] = '{
+    8'hCA, 8'hE0, 8'hE5, 8'hF0, 8'hE7, 8'hD9, 8'hD8, 8'hCA
+};
+localparam bit[7:0] palette_off_blue_map[0:7] = '{
+    8'hB7, 8'hE0, 8'hFF, 8'hF0, 8'hC6, 8'hD9, 8'hB8, 8'hB7
+};
+localparam bit[7:0] palette_on_red_map[0:7] = '{
+    8'h04, 8'h10, 8'h1A, 8'h0A, 8'h6A, 8'h72, 8'h4C, 8'h04
+};
+localparam bit[7:0] palette_on_green_map[0:7] = '{
+    8'h16, 8'h10, 8'h36, 8'h3A, 8'h34, 8'h0B, 8'h2E, 8'h16
+};
+localparam bit[7:0] palette_on_blue_map[0:7] = '{
+    8'h04, 8'h10, 8'h7A, 8'h3A, 8'h00, 8'h12, 8'h12, 8'h04
+};
+
+wire [7:0] palette_off_red   = palette_off_red_map[lcd_palette];
+wire [7:0] palette_off_green = palette_off_green_map[lcd_palette];
+wire [7:0] palette_off_blue  = palette_off_blue_map[lcd_palette];
+wire [7:0] palette_on_red    = palette_on_red_map[lcd_palette];
+wire [7:0] palette_on_green  = palette_on_green_map[lcd_palette];
+wire [7:0] palette_on_blue   = palette_on_blue_map[lcd_palette];
 
 // Contrast level on light and dark pixel
 localparam bit[7:0] contrast_level_map[128] = '{
@@ -648,9 +673,9 @@ begin
     // shift the final color result instead of dividing by 255.
     if(xpos >= img_start_x && ypos >= img_start_y && xpos < img_start_x + LCD_XSIZE && ypos < img_start_y + LCD_YSIZE)
     begin
-        pixel_value_red   <= ({8'h0, 8'hFF - pixel_intensity} * OFF_COLOR[0] + {8'h0, pixel_intensity} * ON_COLOR[0]) / 16'd255;
-        pixel_value_green <= ({8'h0, 8'hFF - pixel_intensity} * OFF_COLOR[1] + {8'h0, pixel_intensity} * ON_COLOR[1]) / 16'd255;
-        pixel_value_blue  <= ({8'h0, 8'hFF - pixel_intensity} * OFF_COLOR[2] + {8'h0, pixel_intensity} * ON_COLOR[2]) / 16'd255;
+        pixel_value_red   <= ({8'h0, 8'hFF - pixel_intensity} * palette_off_red   + {8'h0, pixel_intensity} * palette_on_red)   / 16'd255;
+        pixel_value_green <= ({8'h0, 8'hFF - pixel_intensity} * palette_off_green + {8'h0, pixel_intensity} * palette_on_green) / 16'd255;
+        pixel_value_blue  <= ({8'h0, 8'hFF - pixel_intensity} * palette_off_blue  + {8'h0, pixel_intensity} * palette_on_blue)  / 16'd255;
     end
     else
     begin

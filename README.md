@@ -13,6 +13,7 @@ All official games should be playable.
 # Features
 - Zoom: The zoom is intended mostly for VGA output.
 - Frame Blend (Flickerblend): 4 frames blending
+- Palette presets: Original, Gray, Blue, Teal, Amber, Red, and Sepia
 
 # Refresh Rate
 PokemonMini's LCD refresh rate is around 75Hz, but in reality, that varies depending on temperature, and framerate is usually capped at half that.
